@@ -25,6 +25,13 @@ https://github.com/intel/SGXDataCenterAttestationPrimitives/blob/main/QuoteGener
 
 Npm package "n" might help you to get a proper nodejs version to work: https://www.npmjs.com/package/n
 
+## Datasets
+
+Link to CELEBA: https://drive.google.com/file/d/1KTaJraB9Koa4h5EVTJQ3y2Dig_vgE5MZ/view?usp=sharing
+
+Link to UTKFACE: https://drive.google.com/file/d/1iLCJEu2bwVdd0SiZFzNMkzvhH3TjTWN4/view?usp=sharing
+
+
 ## Install Python Libraries
 When running the code in the docker container, all the required libraries will be installed automatically. To run the code outside of Docker using your Python environment, first install PyTorch, and then install the rest of the dependencies using `requirements.txt`
 
