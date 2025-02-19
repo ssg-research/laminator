@@ -45,7 +45,7 @@ The script `main.py` has the following command-line arguments:
 - `dataset`: One of `[UTKFACE, CIFAR, CENSUS, IMDB]`. Default `UTKFACE`.
 - `epochs`: Number of epochs to train for. Default `5`.
 - `architecture`: One of: `[VGG11, VGG13, VGG16, VGG19]`. Default `VGG11`.
-- `model_size`: Map model size to architecture. One of: `[One of: [S, L]`. Default `S`.
+- `model_size`: Map model size to architecture. One of: `[S, L]`. Default `S`.
 - `attestation_type`: One of: `[train, distribution, accuracy, io]`. Default `train`.
 - `with_sgx`: Boolean argument set to 1 if training from within gramine using SGX. Default `False`
 
