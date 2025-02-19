@@ -22,7 +22,6 @@ import torch
 import numpy as np
 import pandas as pd
 from torch.utils.data import DataLoader
-import torch.backends.cudnn as cudnn
 
 import models
 import utils
@@ -162,13 +161,6 @@ def training_attestation(args):
         train_loader = torch.utils.data.DataLoader(dataset=train_data, batch_size=256, shuffle=True)
 
     # Create model architecture
-    seed = 42
-    torch.manual_seed(seed)
-    torch.cuda.manual_seed(seed)
-
-    cudnn.deterministic = True
-    cudnn.benchmark = False
-
     compute_start = time.time()
     print("Creating model architecture", flush=True)
     if args.dataset == "UTKFACE":
