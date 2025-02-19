@@ -22,6 +22,7 @@ import torch
 import numpy as np
 import pandas as pd
 from torch.utils.data import DataLoader
+import torch.backends.cudnn as cudnn
 
 import models
 import utils
@@ -61,7 +62,6 @@ def get_distribution_data(dataloader):
 
 def distribution_attestation(args):
     # Load data
-    # preprocess_start = time.time()
     data_load = {"UTKFACE": data.process_utkface, "CENSUS": data.process_census}
 
     if not (args.dataset == "UTKFACE" or args.dataset == "CENSUS"):
@@ -69,9 +69,6 @@ def distribution_attestation(args):
         exit()
 
     traindata, _, dataset_hash, input_measure_time, input_load_time, preprocess_time = data_load[args.dataset]()
-    # preprocess_end = time.time()
-    # preprocess_time = preprocess_end - preprocess_start
-    # print("Time to load:", preprocess_time, flush=True)
     
     distribution_properties_results = {}
 
@@ -119,14 +116,14 @@ def distribution_attestation(args):
     output_storage_time = "NA"
     # Generate quote
     if args.with_sgx:
-
         payload = {
         'dataset-hash': base64.b64encode(dataset_hash).decode('utf-8'),
         'distribution_properties': distribution_properties_results
         }
    
         payload_bytes = json.dumps(payload).encode('utf-8')
-        # Output Measurement
+
+        # Output measurement
         output_measurement_start = time.time()
         hasher = hashlib.sha512()
         hasher.update(payload_bytes)
@@ -135,7 +132,7 @@ def distribution_attestation(args):
         output_measurement_time = output_measurement_end - output_measurement_start
         print("Output Measurement Time:", output_measurement_time, flush=True)
 
-        # quote time or the attestation time
+        # Quote generation/attestation time
         attestation_start = time.time()
         quote = quote_generator.generate_quote(user_data=payload_hash)
         json_data = {}
@@ -155,8 +152,6 @@ def distribution_attestation(args):
 
 def training_attestation(args):
     # Load Data
-    # preprocess_start = time.time()
-
     print("Loading data", flush=True)
     data_load = {"CIFAR": data.process_cifar,"UTKFACE": data.process_utkface, "CENSUS": data.process_census, "IMDB": data.process_imdb}
     hidden_layer_sizes = {"VGG11": [128], "VGG13": [128, 256], "VGG16": [128, 256, 128], "VGG19": [128, 256, 512, 256]}
@@ -166,29 +161,33 @@ def training_attestation(args):
     if args.dataset != "IMDB":
         train_loader = torch.utils.data.DataLoader(dataset=train_data, batch_size=256, shuffle=True)
 
-    # preprocess_end = time.time()
-    # preprocess_time = preprocess_end - preprocess_start
-    # print("Time to load:", preprocess_time, flush=True)
-
     # Create model architecture
-    
+    seed = 42
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+
+    cudnn.deterministic = True
+    cudnn.benchmark = False
+
     compute_start = time.time()
     print("Creating model architecture", flush=True)
     if args.dataset == "UTKFACE":
-        args.epochs = 10
+        # args.epochs = 10
         model = models.VGGBinary(args.architecture).to(args.device)
 
     elif args.dataset == "CIFAR":
-        args.epochs = 25
+        # args.epochs = 25
         model = models.VGG(args.architecture).to(args.device)
 
     elif args.dataset == "CENSUS":
-        args.epochs = 5
+        # args.epochs = 5
         model = models.LinearNet(hidden_layer_sizes[args.architecture]).to(args.device)
 
     elif args.dataset == "IMDB":
         train_loader = DataLoader(train_data, shuffle=True, batch_size=50)
         model = models.SentimentRNN(args=args,no_layers=hidden_layer_sizes_text[args.architecture],vocab_size=1001,hidden_dim=256,embedding_dim=64,output_dim = 1,drop_prob=0.5).to(args.device)
+
+    print(args.device)
 
     # Train model
     print("Training model", flush=True)
@@ -210,7 +209,6 @@ def training_attestation(args):
     compute_time = compute_end - compute_start
     print("Time to compute:", compute_time, flush=True)
 
-
     # Hash model
     model_measure_start = time.time()
     model_bytes = bytes_object.getvalue()
@@ -230,7 +228,6 @@ def training_attestation(args):
     output_storage_time = "NA"
     # Generate quote
     if args.with_sgx:
-
         payload = {
         'name': base64.b64encode(model_hash).decode('utf-8'),
         'dataset-hash': base64.b64encode(dataset_hash).decode('utf-8'),
@@ -240,7 +237,8 @@ def training_attestation(args):
         }}
 
         payload_bytes = json.dumps(payload).encode('utf-8')
-   
+
+        # Output measurement
         output_measurement_start = time.time()
         hasher = hashlib.sha512()
         hasher.update(payload_bytes)
@@ -248,6 +246,7 @@ def training_attestation(args):
         output_measurement_end = time.time()
         output_measurement_time = output_measurement_end - output_measurement_start + model_measure_time
 
+        # Quote generation/attestation time
         attestion_start = time.time()
         quote = quote_generator.generate_quote(user_data=payload_hash)
         json_data = {}
@@ -267,8 +266,6 @@ def training_attestation(args):
 
 def accuracy_attestation(args, hidden_layer_sizes, hidden_layer_sizes_text):
     # Load data
-    # preprocess_start = time.time()
-
     data_load = {"CIFAR": data.process_cifar,"UTKFACE": data.process_utkface, "CENSUS": data.process_census, "IMDB": data.process_imdb}
     _, testdata, dataset_hash, data_measure_time, data_load_time, preprocess_time = data_load[args.dataset]()
 
@@ -303,9 +300,6 @@ def accuracy_attestation(args, hidden_layer_sizes, hidden_layer_sizes_text):
 
     input_measure_time = data_measure_time + model_measure_time
     input_load_time = data_load_time + model_load_time
-    # preprocess_end = time.time()
-    # preprocess_time = preprocess_end - preprocess_start
-    # print("Time to load:", preprocess_time, flush=True)
 
     # Get accuracy
     compute_start = time.time()
@@ -324,7 +318,6 @@ def accuracy_attestation(args, hidden_layer_sizes, hidden_layer_sizes_text):
     output_storage_time = "NA"
     # Generate quote
     if args.with_sgx:
-
         payload= {
             'name': base64.b64encode(measured_bytes_model.hasher.digest()).decode('utf-8'),
             'results': {
@@ -339,7 +332,8 @@ def accuracy_attestation(args, hidden_layer_sizes, hidden_layer_sizes_text):
         }
 
         payload_bytes = json.dumps(payload).encode('utf-8')
- 
+        
+        # Output measurement
         output_measurement_start = time.time()
         hasher = hashlib.sha512()
         hasher.update(payload_bytes)
@@ -347,6 +341,7 @@ def accuracy_attestation(args, hidden_layer_sizes, hidden_layer_sizes_text):
         output_measurement_end = time.time()
         output_measurement_time = output_measurement_end - output_measurement_start 
 
+        # Quote generation/attestation time
         attestation_start = time.time()
         quote = quote_generator.generate_quote(user_data=payload_hash)
         json_data = {}
@@ -362,13 +357,10 @@ def accuracy_attestation(args, hidden_layer_sizes, hidden_layer_sizes_text):
         output_storage_end = time.time()
         output_storage_time = output_storage_end - output_storage_start
 
-    # return preprocess_time, compute_time, attestation_time, data_measure_time, model_measure_time
     return preprocess_time, input_load_time, input_measure_time, compute_time, output_measurement_time, output_storage_time, attestation_time 
 
 def io_attestation(args, hidden_layer_sizes, hidden_layer_sizes_text):
     # Load input
-    # preprocess_start = time.time()
-
     input_path = f"./input/{args.dataset.lower()}_input.pt"
     data_measure_start = time.time()
     measured_input, data_load_time = measured_file_read.open_measured(input_path, "rb")
@@ -401,36 +393,33 @@ def io_attestation(args, hidden_layer_sizes, hidden_layer_sizes_text):
 
     input_load_time = data_load_time + model_load_time
     input_measure_time = data_measure_time + model_measure_time
-    # preprocess_end = time.time()
-    # preprocess_time = preprocess_end - preprocess_start
-    # print("Time to load:", preprocess_time, flush=True)
 
     # Get output
     compute_start = time.time()
     model = model.eval()
-    if args.dataset == "IMDB":
-        val_h = model.init_hidden(1)
-        val_h = tuple([each.data for each in val_h])
-        with torch.no_grad():
-            output, val_h = model(input_tensor, val_h)
-            prediction = output.item()
-    else:
-        with torch.no_grad():
-            output = model(input_tensor)
-            _, predicted_classes = torch.max(output, 1)
-            prediction = predicted_classes.sum().item()
+    for i in range(100):
+        if args.dataset == "IMDB":
+            val_h = model.init_hidden(1)
+            val_h = tuple([each.data for each in val_h])
+            with torch.no_grad():
+                output, val_h = model(input_tensor, val_h)
+                prediction = output.item()
+        else:
+            with torch.no_grad():
+                output = model(input_tensor)
+                _, predicted_classes = torch.max(output, 1)
+                prediction = predicted_classes.sum().item()
 
     print("Prediction:", prediction, flush=True)
     compute_end = time.time()
-    compute_time = compute_end - compute_start
+    compute_time = (compute_end - compute_start) / 100
     print("Time to compute:", compute_time, flush=True)
-
+    
     attestation_time = "NA"
     output_measurement_time = "NA"
     output_storage_time = "NA"
     # Generate quote
     if args.with_sgx:
-        # quote_start = time.time()
         payload={
             "name": base64.b64encode(measured_bytes_model.hasher.digest()).decode('utf-8'),
             "results": {
@@ -445,6 +434,7 @@ def io_attestation(args, hidden_layer_sizes, hidden_layer_sizes_text):
 
         payload_bytes = json.dumps(payload).encode('utf-8')
 
+        # Output measurement
         output_measurement_start = time.time()
         hasher = hashlib.sha512() 
         hasher.update(payload_bytes)
@@ -452,6 +442,7 @@ def io_attestation(args, hidden_layer_sizes, hidden_layer_sizes_text):
         output_measurement_end = time.time()
         output_measurement_time = output_measurement_end - output_measurement_start 
 
+        # Quote generation/attestation time
         attestation_start = time.time()
         quote = quote_generator.generate_quote(user_data=payload_hash)
         json_data = {}
@@ -467,7 +458,7 @@ def io_attestation(args, hidden_layer_sizes, hidden_layer_sizes_text):
         output_storage_end = time.time()
         output_storage_time = output_storage_end - output_storage_start
 
-    return 0, input_load_time, input_measure_time, compute_time, output_measurement_time, output_storage_time, attestation_time 
+    return 0, input_load_time, input_measure_time, compute_time, output_measurement_time, output_storage_time, attestation_time
 
 def handle_args():
     parser = argparse.ArgumentParser()
@@ -476,6 +467,7 @@ def handle_args():
     parser.add_argument("--device",type=str,default=torch.device("cuda" if torch.cuda.is_available() else "cpu"),help="GPU ID for this process")
     parser.add_argument("--epochs",type=int,default=5,help="number of epochs to train")
     parser.add_argument("--architecture",type=str,default="VGG11",help="[One of: [VGG11, VGG13, VGG16, VGG19]")
+    parser.add_argument("--model_size",type=str,default="S",help="[One of: [S, L]")
     parser.add_argument("--attestation_type",type=str, default="train", help="One of: [train, distribution, accuracy, io]")
     parser.add_argument("--with_sgx",type=bool, default=False, help="Whether the script is being run inside Gramine or not")
     parser.add_argument("--exp_id",type=int, default=0, help="For reporting purposes.")
@@ -490,6 +482,18 @@ if __name__ == "__main__":
 
     hidden_layer_sizes = {"VGG11": [128], "VGG13": [128, 256], "VGG16": [128, 256, 128], "VGG19": [128, 256, 512, 256]}
     hidden_layer_sizes_text = {"VGG11": 2, "VGG13": 4, "VGG16": 6, "VGG19": 8}
+
+    # Change the model size S/L to the architecture.
+    if args.model_size == "S":
+        args.architecture = "VGG11"
+    elif args.model_size == "L":
+        if args.dataset == "CENSUS":
+            args.architecture = "VGG19"
+        elif args.dataset == "UTKFACE":
+            args.architecture = "VGG16"
+        elif args.dataset == "IMDB":
+            args.architecture = "VGG13"
+    
 
     print("Starting", flush=True)
 
@@ -508,6 +512,6 @@ if __name__ == "__main__":
     if args.attestation_type == "distribution":
         with open("./distribution_results.csv", "a") as f:
             f.write(f"{args.dataset},{args.epochs},{args.architecture},{args.attestation_type},{args.with_sgx}, {preprocess_time}, {input_load_time}, {input_measure_time}, {compute_time}, {output_measurement_time}, {output_storage_time}, {attestation_time},{compute_race_z},{compute_sex_z},{compute_race_z_y},{compute_sex_z_y}\n")
-    elif args.attestation_type != "distribution":
+    else:
         with open("./results.csv", "a") as f:
             f.write(f"{args.dataset},{args.epochs},{args.architecture},{args.attestation_type},{args.with_sgx}, {preprocess_time}, {input_load_time}, {input_measure_time}, {compute_time}, {output_measurement_time}, {output_storage_time}, {attestation_time}\n")

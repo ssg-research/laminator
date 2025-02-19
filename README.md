@@ -45,17 +45,18 @@ The script `main.py` has the following command-line arguments:
 - `dataset`: One of `[UTKFACE, CIFAR, CENSUS, IMDB]`. Default `UTKFACE`.
 - `epochs`: Number of epochs to train for. Default `5`.
 - `architecture`: One of: `[VGG11, VGG13, VGG16, VGG19]`. Default `VGG11`.
+- `model_size`: Map model size to architecture. One of: `[One of: [S, L]`. Default `S`.
 - `attestation_type`: One of: `[train, distribution, accuracy, io]`. Default `train`.
 - `with_sgx`: Boolean argument set to 1 if training from within gramine using SGX. Default `False`
 
 Example in your own environment:
 ```
-python main.py --dataset CENSUS --epochs 10 --architecture VGG11
+python main.py --dataset CENSUS --epochs 5 --model_size S --attestation_type train
 ```
 
 Example when running in Docker:
 ```
-python3 main.py --dataset CENSUS --epochs 10 --architecture VGG11
+python3 main.py --dataset CENSUS --epochs 5 --model_size S --attestation_type train
 ```
 
 To run the code in an SGX enclave using Gramine, use the following code to setup a Docker image and run a docker container
@@ -69,7 +70,7 @@ To run the attestation once inside the docker container:
 ```
 make -f Makefile.main clean
 make -f Makefile.main SGX=1
-gramine-sgx ./main main.py --with_sgx 1
+gramine-sgx ./main main.py --dataset CENSUS --epochs 5 --model_size S --attestation_type train --with_sgx 1
 ```
 Note: Run training first to get a model.
 
@@ -84,7 +85,7 @@ Use the following bash script to run an experiment 10 times using the default ar
 bash run_test_SGX.sh <dataset> <attestation_type>
 ```
 
-Furthermore, the following scripts can be used to run all the datasets, model sizes, architectures, 10 times. 
+Furthermore, the following scripts can be used to run all the datasets, attestations, architectures, 10 times. 
 ```
 bash run_everything_base.sh
 bash run_everything_sgx.sh

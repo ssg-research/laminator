@@ -25,7 +25,7 @@ fs.mounts = [
 {% for path in python.get_sys_path(entrypoint) %}
   { path = "{{ path }}", uri = "file:{{ path }}" },
 {% endfor %}
-
+  { path = "/usr/share/zoneinfo", uri = "file:/usr/share/zoneinfo" },
   { path = "/root/nltk_data", uri = "file:/root/nltk_data" },
   { type = "tmpfs", path = "/tmp" },
 ]
@@ -70,7 +70,9 @@ sgx.allowed_files = [
   "file:./data/utkface.csv",
   "file:./data/IMDB_Dataset.csv",
   "file:/root/nltk_data/",
+  "file:/usr/share/zoneinfo/",
   "file:./results.csv",
+  "file:./distribution_results.csv",
 ]
 
 sys.enable_extra_runtime_domain_names_conf = true
