@@ -91,9 +91,24 @@ bash run_everything_base.sh
 bash run_everything_sgx.sh
 ```
 
+Additionally, we use [PyNaCl](https://pynacl.readthedocs.io/en/latest/) to compare the time taken for signing using a key pair versus hardware-based attestation for input/output attestation. The software signing approach can be implemented using the following code:
+
+```python
+from nacl.signing import SigningKey
+
+key_signing_start = time.time()
+
+# Generate a new random signing 
+signing_key = SigningKey.generate()
+
+# Sign a payload_hash, which is the user data used to generate the SGX quote.
+keysigned = signing_key.sign(payload_hash)
+
+key_signing_end = time.time()
+key_signing_total = key_signing_end - key_signing_start
+```
 
 Useful links:
-
 - https://gramine.readthedocs.io/en/stable/
 - https://gramine.readthedocs.io/en/stable/manifest-syntax.html
 - https://gramine.readthedocs.io/en/stable/attestation.html
