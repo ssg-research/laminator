@@ -40,8 +40,8 @@ def process_utkface(path="./data/utkface.csv"):
     total_data_measure_start = time.time()
     measured_data_bytes, load_time = open_measured(path, 'rb')
     total_data_measure_end = time.time()
-    total_data_measure_time = total_data_measure_start - total_data_measure_end
-    data_measure_time = load_time - total_data_measure_time
+    total_data_measure_time = total_data_measure_end - total_data_measure_start
+    data_measure_time = total_data_measure_time - load_time
 
     preprocess_start = time.time()
     df = pd.read_csv(measured_data_bytes, na_values="NA", index_col=None, sep=",", header=0)
@@ -91,8 +91,8 @@ def process_census(path="./data/adult.data"):
     total_data_measure_start = time.time()
     measured_data_bytes, load_time = open_measured(path, 'rb')
     total_data_measure_end = time.time()
-    total_data_measure_time = total_data_measure_start - total_data_measure_end
-    data_measure_time = load_time - total_data_measure_time
+    total_data_measure_time = total_data_measure_end - total_data_measure_start
+    data_measure_time = total_data_measure_time - load_time
 
     preprocess_start = time.time()
     input_data = (pd.read_csv(measured_data_bytes, names=column_names, na_values="?", sep=r'\s*,\s*', engine='python').loc[lambda df: df['race'].isin(['White', 'Black'])])
@@ -130,8 +130,8 @@ def process_imdb(path = './data/IMDB_Dataset.csv'):
     total_data_measure_start = time.time()
     measured_data_bytes, load_time = open_measured(path, 'rb')
     total_data_measure_end = time.time()
-    total_data_measure_time = total_data_measure_start - total_data_measure_end
-    data_measure_time = load_time - total_data_measure_time
+    total_data_measure_time = total_data_measure_end - total_data_measure_start
+    data_measure_time = total_data_measure_time - load_time
 
     preprocess_start = time.time()
     df = pd.read_csv(measured_data_bytes)
