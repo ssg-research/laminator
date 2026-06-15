@@ -14,7 +14,19 @@ loader.env.HOME = "{{ env.HOME }}"
 # issue, observed on CentOS/RHEL.
 loader.env.OMP_NUM_THREADS = "8"
 
-loader.insecure__use_cmdline_argv = true
+# Run configuration is fixed here (not taken from the untrusted command line)
+# so that it is measured into MRENCLAVE. Values are filled in at manifest-build
+# time via gramine-manifest -D defines (see Makefile.main). EXP_ID is a
+# reporting-only label and is intentionally left unmeasured (host-provided).
+loader.argv = ["{{ entrypoint }}", "main.py"]
+
+loader.env.DATASET = "{{ dataset }}"
+loader.env.ATTESTATION_TYPE = "{{ attestation_type }}"
+loader.env.ARCHITECTURE = "{{ architecture }}"
+loader.env.MODEL_SIZE = "{{ model_size }}"
+loader.env.EPOCHS = "{{ epochs }}"
+loader.env.WITH_SGX = "1"
+loader.env.EXP_ID = { passthrough = true }
 
 fs.mounts = [
   { path = "{{ entrypoint }}", uri = "file:{{ entrypoint }}" },

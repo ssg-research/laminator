@@ -29,7 +29,7 @@ do
     start_time=$(date +%s.%N)
 
     # Run the Python script and capture its output including start time details
-    output=$(python3 main.py --dataset "$dataset" --attestation_type "$attestation_type" 2>&1)
+    output=$(DATASET="$dataset" ATTESTATION_TYPE="$attestation_type" python3 main.py 2>&1)
 
     # Capture end time in seconds (with nanosecond precision converted to seconds)
     end_time=$(date +%s.%N)

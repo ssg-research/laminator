@@ -21,6 +21,11 @@ times=10
 dataset=$1
 attestation_type=$2
 
+# Bind this run's configuration into the measured enclave by regenerating and
+# re-signing the manifest before launching. ARCHITECTURE/MODEL_SIZE/EPOCHS use
+# the Makefile defaults here.
+make SGX=1 DATASET="$dataset" ATTESTATION_TYPE="$attestation_type"
+
 for (( i=1; i<=times; i++ ))
 do
     echo "Run $i:" >> results.txt
@@ -29,7 +34,7 @@ do
     start_time=$(date +%s.%N)
 
     # Run the Python script and capture its output including start time details
-    output=$(gramine-sgx ./main main.py --dataset "$dataset" --attestation_type "$attestation_type" --with_sgx 1 2>&1)
+    output=$(EXP_ID="$i" gramine-sgx ./main 2>&1)
 
     # Capture end time in seconds (with nanosecond precision converted to seconds)
     end_time=$(date +%s.%N)

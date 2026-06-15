@@ -19,13 +19,13 @@ times=10
 > sgx_results.txt
 
 declare -a datasets=("CENSUS" "IMDB" "UTKFACE")
-declare -a model_sizes=("VGG11" "VGG13" "VGG16" "VGG19")
+declare -a architectures=("VGG11" "VGG13" "VGG16" "VGG19")
 declare -a attestations=("train" "accuracy" "io" "distribution")
 
 echo "Starting tests"
 
-for model_size in "${model_sizes[@]}"; do
-    echo "MODEL SIZE: $model_size" >> sgx_results.txt
+for architecture in "${architectures[@]}"; do
+    echo "ARCHITECTURE: $architecture" >> sgx_results.txt
 
     for dataset in "${datasets[@]}"; do
         echo "DATASET: $dataset" >> sgx_results.txt
@@ -35,16 +35,20 @@ for model_size in "${model_sizes[@]}"; do
                 continue
             fi
 
+            # Bind this configuration into the measured enclave: regenerate and
+            # re-sign the manifest so DATASET/ATTESTATION_TYPE/ARCHITECTURE are
+            # measured into MRENCLAVE for the runs below.
+            make SGX=1 DATASET="$dataset" ATTESTATION_TYPE="$attestation" ARCHITECTURE="$architecture"
 
             for (( i=1; i<=times; i++ )); do
-                echo "CURRENTLY RUNNING: $model_size" "$dataset" "$attestation" "$i"
+                echo "CURRENTLY RUNNING: $architecture" "$dataset" "$attestation" "$i"
                 echo "RUN $i:" >> sgx_results.txt
 
                 # Capture start time in seconds (with nanosecond precision converted to seconds)
                 start_time=$(date +%s.%N)
 
                 # Run the Python script and capture its output including start time details
-                output=$(gramine-sgx ./main main.py --dataset "$dataset" --attestation_type "$attestation" --architecture "$model_size" --exp_id "$i" --with_sgx 1 2>&1)
+                output=$(EXP_ID="$i" gramine-sgx ./main 2>&1)
 
                 # Capture end time in seconds (with nanosecond precision converted to seconds)
                 end_time=$(date +%s.%N)

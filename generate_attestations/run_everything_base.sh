@@ -19,13 +19,13 @@ times=10
 > base_results.txt
 
 declare -a datasets=("CENSUS" "IMDB" "UTKFACE")
-declare -a model_sizes=("VGG11" "VGG13" "VGG16" "VGG19")
+declare -a architectures=("VGG11" "VGG13" "VGG16" "VGG19")
 declare -a attestations=("train" "accuracy" "io" "distribution")
 
 echo "Starting tests"
 
-for model_size in "${model_sizes[@]}"; do
-    echo "MODEL SIZE: $model_size" >> base_results.txt
+for architecture in "${architectures[@]}"; do
+    echo "ARCHITECTURE: $architecture" >> base_results.txt
 
     for dataset in "${datasets[@]}"; do
         echo "DATASET: $dataset" >> base_results.txt
@@ -37,14 +37,14 @@ for model_size in "${model_sizes[@]}"; do
 
 
             for (( i=1; i<=times; i++ )); do
-                echo "CURRENTLY RUNNING: $model_size" "$dataset" "$attestation" "$i"
+                echo "CURRENTLY RUNNING: $architecture" "$dataset" "$attestation" "$i"
                 echo "RUN $i:" >> base_results.txt
 
                 # Capture start time in seconds (with nanosecond precision converted to seconds)
                 start_time=$(date +%s.%N)
 
                 # Run the Python script and capture its output including start time details
-                output=$(python3 main.py --dataset "$dataset" --attestation_type "$attestation" --architecture "$model_size" --exp_id "$i" 2>&1)
+                output=$(DATASET="$dataset" ATTESTATION_TYPE="$attestation" ARCHITECTURE="$architecture" EXP_ID="$i" python3 main.py 2>&1)
 
                 # Capture end time in seconds (with nanosecond precision converted to seconds)
                 end_time=$(date +%s.%N)

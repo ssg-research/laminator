@@ -453,18 +453,19 @@ def io_attestation(args, hidden_layer_sizes, hidden_layer_sizes_text):
     return 0, input_load_time, input_measure_time, compute_time, output_measurement_time, output_storage_time, attestation_time
 
 def handle_args():
-    parser = argparse.ArgumentParser()
-
-    parser.add_argument("--dataset",type=str,default="UTKFACE",help="One of: [UTKFACE, CIFAR, CENSUS, IMDB]")
-    parser.add_argument("--device",type=str,default=torch.device("cuda" if torch.cuda.is_available() else "cpu"),help="GPU ID for this process")
-    parser.add_argument("--epochs",type=int,default=5,help="number of epochs to train")
-    parser.add_argument("--architecture",type=str,default="VGG11",help="[One of: [VGG11, VGG13, VGG16, VGG19]")
-    parser.add_argument("--model_size",type=str,default="S",help="[One of: [S, L]")
-    parser.add_argument("--attestation_type",type=str, default="train", help="One of: [train, distribution, accuracy, io]")
-    parser.add_argument("--with_sgx",type=bool, default=False, help="Whether the script is being run inside Gramine or not")
-    parser.add_argument("--exp_id",type=int, default=0, help="For reporting purposes.")
-
-    args = parser.parse_args()
+    # Configuration is read from environment variables rather than command-line
+    # arguments so that, under SGX, it can be fixed in the Gramine manifest and
+    # measured into MRENCLAVE (see main.manifest.template). EXP_ID is the only
+    # exception: it is a reporting-only label and is passed through unmeasured.
+    args = argparse.Namespace()
+    args.dataset = os.environ.get("DATASET", "UTKFACE")
+    args.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    args.epochs = int(os.environ.get("EPOCHS", "5"))
+    args.architecture = os.environ.get("ARCHITECTURE", "VGG11")
+    args.model_size = os.environ.get("MODEL_SIZE", "S")
+    args.attestation_type = os.environ.get("ATTESTATION_TYPE", "train")
+    args.with_sgx = os.environ.get("WITH_SGX", "0") == "1"
+    args.exp_id = int(os.environ.get("EXP_ID", "0"))
 
     return args
 
@@ -475,16 +476,13 @@ if __name__ == "__main__":
     hidden_layer_sizes = {"VGG11": [128], "VGG13": [128, 256], "VGG16": [128, 256, 128], "VGG19": [128, 256, 512, 256]}
     hidden_layer_sizes_text = {"VGG11": 2, "VGG13": 4, "VGG16": 6, "VGG19": 8}
 
-    # Change the model size S/L to the architecture.
-    if args.model_size == "S":
-        args.architecture = "VGG11"
-    elif args.model_size == "L":
-        if args.dataset == "CENSUS":
-            args.architecture = "VGG19"
-        elif args.dataset == "UTKFACE":
-            args.architecture = "VGG16"
-        elif args.dataset == "IMDB":
-            args.architecture = "VGG13"
+    # MODEL_SIZE="L" selects a per-dataset large architecture; for any other
+    # value the configured ARCHITECTURE is honored as-is. Previously MODEL_SIZE
+    # defaulted to "S" and unconditionally forced VGG11, silently overriding an
+    # explicitly requested architecture.
+    if args.model_size == "L":
+        large_architecture = {"CENSUS": "VGG19", "UTKFACE": "VGG16", "IMDB": "VGG13"}
+        args.architecture = large_architecture.get(args.dataset, args.architecture)
     
 
     print("Starting", flush=True)
