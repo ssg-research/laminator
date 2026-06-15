@@ -288,7 +288,7 @@ def accuracy_attestation(args, hidden_layer_sizes, hidden_layer_sizes_text):
     model_measure_end = time.time()
     model_measure_time = model_measure_end - model_measure_start - model_load_time
 
-    model.load_state_dict(torch.load(measured_bytes_model))
+    model.load_state_dict(torch.load(measured_bytes_model, weights_only=True))
 
     input_measure_time = data_measure_time + model_measure_time
     input_load_time = data_load_time + model_load_time
@@ -358,7 +358,7 @@ def io_attestation(args, hidden_layer_sizes, hidden_layer_sizes_text):
     measured_input, data_load_time = measured_file_read.open_measured(input_path, "rb")
     data_measure_end = time.time()
     data_measure_time = data_measure_end - data_measure_start - data_load_time
-    input_tensor = torch.load(measured_input).unsqueeze(0).to(args.device)
+    input_tensor = torch.load(measured_input, weights_only=True).unsqueeze(0).to(args.device)
 
     # Create model architecture
     if args.dataset == "UTKFACE":
@@ -381,7 +381,7 @@ def io_attestation(args, hidden_layer_sizes, hidden_layer_sizes_text):
     model_measure_end = time.time()
     model_measure_time = model_measure_end - model_measure_start - model_load_time
 
-    model.load_state_dict(torch.load(measured_bytes_model))
+    model.load_state_dict(torch.load(measured_bytes_model, weights_only=True))
 
     input_load_time = data_load_time + model_load_time
     input_measure_time = data_measure_time + model_measure_time
