@@ -453,10 +453,13 @@ def io_attestation(args, hidden_layer_sizes, hidden_layer_sizes_text):
     return 0, input_load_time, input_measure_time, compute_time, output_measurement_time, output_storage_time, attestation_time
 
 def handle_args():
-    # Configuration is read from environment variables rather than command-line
-    # arguments so that, under SGX, it can be fixed in the Gramine manifest and
-    # measured into MRENCLAVE (see main.manifest.template). EXP_ID is the only
-    # exception: it is a reporting-only label and is passed through unmeasured.
+    # Configuration is read from environment variables rather than the command
+    # line. Under SGX these are pass-through env vars (see main.manifest.template)
+    # and the host no longer controls argv, which closes the arbitrary-code path
+    # that loader.insecure__use_cmdline_argv opened. The config is not part of
+    # MRENCLAVE; instead every value that affects a result is hashed into the
+    # quote's report_data at runtime, so reported metadata cannot diverge from
+    # what the enclave actually ran.
     args = argparse.Namespace()
     args.dataset = os.environ.get("DATASET", "UTKFACE")
     args.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")

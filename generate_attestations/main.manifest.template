@@ -14,19 +14,29 @@ loader.env.HOME = "{{ env.HOME }}"
 # issue, observed on CentOS/RHEL.
 loader.env.OMP_NUM_THREADS = "8"
 
-# Run configuration is fixed here (not taken from the untrusted command line)
-# so that it is measured into MRENCLAVE. Values are filled in at manifest-build
-# time via gramine-manifest -D defines (see Makefile.main). EXP_ID is a
-# reporting-only label and is intentionally left unmeasured (host-provided).
+# The command line is fixed here instead of being taken from the untrusted host
+# (which is what loader.insecure__use_cmdline_argv allowed). A host-supplied
+# argv could inject Python interpreter flags such as `-c "..."` and execute
+# arbitrary code inside the enclave under the trusted MRENCLAVE.
 loader.argv = ["{{ entrypoint }}", "main.py"]
 
-loader.env.DATASET = "{{ dataset }}"
-loader.env.ATTESTATION_TYPE = "{{ attestation_type }}"
-loader.env.ARCHITECTURE = "{{ architecture }}"
-loader.env.MODEL_SIZE = "{{ model_size }}"
-loader.env.EPOCHS = "{{ epochs }}"
-loader.env.WITH_SGX = "1"
+# Run configuration is supplied through this explicit allowlist of pass-through
+# environment variables. The values are host-provided and not part of
+# MRENCLAVE, so a single measured enclave identity serves every dataset and
+# architecture. This does not let reported metadata diverge from what was run:
+# every config value that affects a result is hashed into the quote's
+# report_data at runtime (see the attestation payloads in main.py), so the same
+# enclave run that uses a value also signs it.
+loader.env.DATASET = { passthrough = true }
+loader.env.ATTESTATION_TYPE = { passthrough = true }
+loader.env.ARCHITECTURE = { passthrough = true }
+loader.env.MODEL_SIZE = { passthrough = true }
+loader.env.EPOCHS = { passthrough = true }
 loader.env.EXP_ID = { passthrough = true }
+
+# WITH_SGX is a property of running under this SGX manifest, not user config, so
+# it is fixed rather than passed through.
+loader.env.WITH_SGX = "1"
 
 fs.mounts = [
   { path = "{{ entrypoint }}", uri = "file:{{ entrypoint }}" },

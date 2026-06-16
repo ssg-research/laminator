@@ -4,14 +4,6 @@
 
 ARCH_LIBDIR ?= /lib/$(shell $(CC) -dumpmachine)
 
-# Run configuration baked into the (measured) manifest. Override on the make
-# command line, e.g. `make SGX=1 DATASET=CENSUS ATTESTATION_TYPE=accuracy ARCHITECTURE=VGG13`.
-DATASET ?= UTKFACE
-ATTESTATION_TYPE ?= train
-ARCHITECTURE ?= VGG11
-MODEL_SIZE ?= S
-EPOCHS ?= 5
-
 ifeq ($(DEBUG),1)
 GRAMINE_LOG_LEVEL = debug
 else
@@ -29,11 +21,6 @@ main.manifest: main.manifest.template
 		-Dlog_level=$(GRAMINE_LOG_LEVEL) \
 		-Darch_libdir=$(ARCH_LIBDIR) \
 		-Dentrypoint=$(realpath $(shell sh -c "command -v python3")) \
-		-Ddataset=$(DATASET) \
-		-Dattestation_type=$(ATTESTATION_TYPE) \
-		-Darchitecture=$(ARCHITECTURE) \
-		-Dmodel_size=$(MODEL_SIZE) \
-		-Depochs=$(EPOCHS) \
 		$< > $@
 
 # Make on Ubuntu <= 20.04 doesn't support "Rules with Grouped Targets" (`&:`),
